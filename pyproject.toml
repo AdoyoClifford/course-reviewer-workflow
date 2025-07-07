@@ -1,0 +1,38 @@
+[project]
+name = "course-reviewer-workflow"
+version = "0.1.0"
+description = "A course review workflow system"
+authors = [
+    {name = "CLifford",email = "adoyoclifford@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-generativeai>=0.8.5,<0.9.0",
+    "python-dotenv>=1.1.0,<2.0.0",
+    "requests>=2.31.0,<3.0.0",
+    "google-adk>=0.1.0,<0.2.0",
+    "pydantic>=2.11.3,<3.0.0",
+    "google-cloud-aiplatform[adk,agent_engines]>=1.42.1,<2.0.0",
+    "absl-py>=2.1.0,<3.0.0",
+    "cloudpickle>=3.0.0,<4.0.0",
+    
+]
+
+# Define console scripts/entry points
+[project.scripts]
+course-reviewer = "reviewer:app"
+reviewer-agent = "reviewer.agent:main"
+deploy-remote = "deployment.remote:main"
+cleanup = "deployment.cleanup:cleanup_deployment"
+deploy-local = "deployment.local:main"
+
+[tool.poetry]
+packages = [
+    {include = "reviewer"},
+    {include = "deployment"}
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
