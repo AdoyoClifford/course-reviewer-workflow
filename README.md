@@ -46,7 +46,14 @@ source $(poetry env info --path)/bin/activate
 
 ## Configuration
 
-1. Create a `.env` file in the project root with the following variables:
+⚠️ **SECURITY IMPORTANT**: Never commit your `.env` file to version control!
+
+1. Copy the example environment file and configure it:
+```bash
+cp .env.example .env
+```
+
+2. Edit the `.env` file with your actual credentials:
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=your-project-id
@@ -56,7 +63,11 @@ GOOGLE_API_KEY=your-google-api-key
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
-2. Set up Google Cloud authentication:
+**Getting API Keys:**
+- Google AI Studio: https://makersuite.google.com/app/apikey
+- Google Cloud Console: https://console.cloud.google.com/
+
+3. Set up Google Cloud authentication:
 ```bash
 gcloud auth login
 gcloud config set project your-project-id
@@ -318,6 +329,12 @@ The system can be integrated into educational platforms via:
    - Use `poetry run cleanup` to remove failed deployments
    - Check Google Cloud Console for orphaned resources
    - Verify resource IDs when deleting specific deployments
+
+5. **`AttributeError` during remote deployment:**
+   - If you encounter an `AttributeError: module 'vertexai.preview.reasoning_engines' has no attribute 'init'`, it means the `reasoning_engines.init()` call is deprecated. This has been fixed by removing the redundant call in `deployment/remote.py`.
+
+6. **Web UI analysis fails:**
+   - If the UI shows an "Analysis failed" error, but the terminal shows the analysis is working, the issue is likely with the communication between the web server and the deployment script. This has been fixed by using `stdin` to pass the course content, which is a more reliable method.
 
 ## Contributing
 

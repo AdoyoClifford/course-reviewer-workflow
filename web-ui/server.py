@@ -5,6 +5,9 @@ import tempfile
 import json
 from dotenv import load_dotenv
 import logging
+import subprocess
+import re
+import ast
 
 # Load environment variables
 load_dotenv()
@@ -34,7 +37,6 @@ def create_session():
     """Create a new evaluation session"""
     try:
         # For demo purposes, we'll use a simple session ID
-        # In production, integrate with the actual remote deployment
         session_id = f"demo_session_{len(active_sessions) + 1}"
         
         active_sessions[session_id] = {
@@ -79,13 +81,10 @@ def analyze_course():
         
         logger.info(f"Analyzing content for session: {session_id}")
         
-        # Get the deployed resource ID (use the one we found earlier)
         resource_id = os.getenv('COURSE_REVIEWER_RESOURCE_ID', 'projects/319361346283/locations/us-central1/reasoningEngines/856273267432882176')
         
-        # Call the actual Course Reviewer Workflow
         results = call_course_reviewer_workflow(resource_id, session_id, course_content)
         
-        # If the workflow call failed, return an error
         if results is None:
             return jsonify({
                 'success': False,
@@ -106,20 +105,11 @@ def analyze_course():
 
 def call_course_reviewer_workflow(resource_id, session_id, course_content):
     """
-    Call the actual Course Reviewer Workflow deployed on Google Cloud
-    This function integrates with the remote deployment
+    Call the actual Course Reviewer Workflow deployed on Google Cloud.
     """
     try:
-        import subprocess
-        import json
-        import re
-        
-        logger.info(f"Calling deployed workflow with resource_id: {resource_id}")
-        
-        # Use the .venv Python executable directly with absl
         python_path = os.path.join('..', '.venv', 'Scripts', 'python.exe')
         
-        # First, create a session if needed (or use existing one)
         create_session_command = [
             python_path, '-m', 'deployment.remote', 
             '--create_session',
@@ -131,78 +121,72 @@ def call_course_reviewer_workflow(resource_id, session_id, course_content):
         
         if session_result.returncode != 0:
             logger.error(f"Failed to create session: {session_result.stderr}")
-            logger.error(f"Session stdout: {session_result.stdout}")
             return None
         
-        # Extract session ID from output
-        session_output = session_result.stdout
-        session_id_match = re.search(r'Session ID: (\d+)', session_output)
+        session_id_match = re.search(r'Session ID: (\d+)', session_result.stdout)
         
         if not session_id_match:
             logger.error("Could not extract session ID from output")
-            logger.error(f"Full output: {session_output}")
             return None
         
         actual_session_id = session_id_match.group(1)
         logger.info(f"Created session with ID: {actual_session_id}")
         
-        # Now send the course content for analysis
         analyze_command = [
             python_path, '-m', 'deployment.remote',
             '--send',
             f'--resource_id={resource_id}',
             f'--session_id={actual_session_id}',
-            f'--message={course_content}'
         ]
         
-        logger.info("Sending course content for analysis...")
-        result = subprocess.run(analyze_command, capture_output=True, text=True, cwd='..')
+        logger.info("Sending course content for analysis via stdin...")
+        result = subprocess.run(
+            analyze_command, 
+            capture_output=True, 
+            encoding='utf-8', 
+            cwd='..',
+            input=course_content
+        )
         
         if result.returncode != 0:
             logger.error(f"Workflow execution failed: {result.stderr}")
-            logger.error(f"Workflow stdout: {result.stdout}")
             return None
         
-        # Parse the output to extract the evaluation results
         output = result.stdout
         logger.info(f"Workflow output received: {len(output)} characters")
         
-        # Look for the final JSON result from the score calculator
-        # The output should contain a JSON object with the final evaluation
-        lines = output.split('\n')
-        
+        lines = output.strip().split('\n')
+        score_calculator_output_str = None
         for line in lines:
-            line = line.strip()
-            # Look for lines that contain JSON-like content with final_score
-            if 'final_score' in line and '{' in line:
-                try:
-                    # Extract JSON from the line
-                    start_idx = line.find('{')
-                    end_idx = line.rfind('}') + 1
-                    
-                    if start_idx != -1 and end_idx > start_idx:
-                        json_str = line[start_idx:end_idx]
-                        
-                        # Clean up any markdown formatting
-                        json_str = json_str.replace('```json', '').replace('```', '')
-                        
-                        # Parse the JSON
-                        evaluation_result = json.loads(json_str)
-                        
-                        # Validate that it has the expected structure
-                        if 'final_score' in evaluation_result and 'individual_scores' in evaluation_result:
-                            logger.info(f"Successfully parsed evaluation result: {evaluation_result['final_score']}")
-                            return evaluation_result
-                            
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse JSON from line: {e}")
-                    continue
+            if "'author': 'score_calculator'" in line:
+                score_calculator_output_str = line.strip()
+                break
         
-        # If we couldn't parse the results, log the output for debugging
-        logger.warning("Could not parse workflow results from output:")
-        logger.warning(output)
-        return None
-        
+        if not score_calculator_output_str:
+            logger.warning("Could not find output from score_calculator agent.")
+            return None
+
+        try:
+            event_dict = ast.literal_eval(score_calculator_output_str)
+            json_str = event_dict['content']['parts'][0]['text']
+            
+            # Clean up markdown formatting
+            json_str = re.sub(r'^```json\s*', '', json_str, flags=re.MULTILINE)
+            json_str = re.sub(r'\s*```$', '', json_str, flags=re.MULTILINE)
+            
+            evaluation_result = json.loads(json_str)
+            
+            if 'final_score' in evaluation_result:
+                logger.info(f"Successfully parsed evaluation result: {evaluation_result['final_score']}")
+                return evaluation_result
+            else:
+                logger.warning("Parsed JSON does not contain 'final_score'.")
+                return None
+
+        except (ValueError, SyntaxError, KeyError, IndexError) as e:
+            logger.error(f"Failed to parse workflow output: {e}")
+            return None
+
     except Exception as e:
         logger.error(f"Error calling workflow: {str(e)}")
         return None
@@ -224,7 +208,6 @@ def health_check():
     })
 
 if __name__ == '__main__':
-    # Check if we're in the web-ui directory
     current_dir = os.path.basename(os.getcwd())
     if current_dir != 'web-ui':
         print("Please run this server from the web-ui directory:")

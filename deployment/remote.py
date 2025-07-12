@@ -1,5 +1,6 @@
 import os
 import sys
+import toml
 
 # Force UTF-8 encoding for console output
 os.environ['PYTHONIOENCODING'] = 'utf-8'
@@ -50,14 +51,18 @@ flags.mark_bool_flags_as_mutual_exclusive(
 )
 
 
+
 def create() -> None:
     """Creates a new deployment."""
+    # Dynamically read dependencies from pyproject.toml
+    with open("pyproject.toml", "r") as f:
+        pyproject_data = toml.load(f)
+    dependencies = pyproject_data["project"]["dependencies"]
+
     # Now deploy to Agent Engine
     remote_app = agent_engines.create(
         agent_engine=app,
-        requirements=[
-            "google-cloud-aiplatform[adk,agent_engines]",
-        ],
+        requirements=dependencies,
         extra_packages=["./reviewer"],
     )
     print(f"Created remote app: {remote_app.resource_name}")
@@ -65,9 +70,12 @@ def create() -> None:
 
 def delete(resource_id: str) -> None:
     """Deletes an existing deployment."""
-    remote_app = agent_engines.get(resource_id)
-    remote_app.delete(force=True)
-    print(f"Deleted remote app: {resource_id}")
+    try:
+        remote_app = agent_engines.get(resource_id)
+        remote_app.delete(force=True)
+        print(f"Deleted remote app: {resource_id}")
+    except Exception as e:
+        print(f"Error deleting deployment: {e}")
 
 
 def list_deployments() -> None:
@@ -83,60 +91,72 @@ def list_deployments() -> None:
 
 def create_session(resource_id: str, user_id: str) -> None:
     """Creates a new session for the specified user."""
-    remote_app = agent_engines.get(resource_id)
-    remote_session = remote_app.create_session(user_id=user_id)
-    print("Created session:")
-    print(f"  Session ID: {remote_session.get('id')}")
-    print(f"  User ID: {remote_session.get('user_id', 'N/A')}")
-    print(f"  App name: {remote_session.get('app_name', 'N/A')}")
-    print(f"  Last update time: {remote_session.get('last_update_time', 'N/A')}")
-    print("\nUse this session ID with --session_id when sending messages.")
+    try:
+        remote_app = agent_engines.get(resource_id)
+        remote_session = remote_app.create_session(user_id=user_id)
+        print("Created session:")
+        print(f"  Session ID: {remote_session.get('id')}")
+        print(f"  User ID: {remote_session.get('user_id', 'N/A')}")
+        print(f"  App name: {remote_session.get('app_name', 'N/A')}")
+        print(f"  Last update time: {remote_session.get('last_update_time', 'N/A')}")
+        print("\nUse this session ID with --session_id when sending messages.")
+    except Exception as e:
+        print(f"Error creating session: {e}")
 
 
 def list_sessions(resource_id: str, user_id: str) -> None:
     """Lists all sessions for the specified user."""
-    remote_app = agent_engines.get(resource_id)
-    sessions = remote_app.list_sessions(user_id=user_id)
-    print(f"Sessions for user '{user_id}':")
-    for session in sessions:
-        print(f"- Session ID: {session['id']}")
+    try:
+        remote_app = agent_engines.get(resource_id)
+        sessions = remote_app.list_sessions(user_id=user_id)
+        print(f"Sessions for user '{user_id}':")
+        for session in sessions:
+            print(f"- Session ID: {session['id']}")
+    except Exception as e:
+        print(f"Error listing sessions: {e}")
 
 
 def get_session(resource_id: str, user_id: str, session_id: str) -> None:
     """Gets a specific session."""
-    remote_app = agent_engines.get(resource_id)
-    session = remote_app.get_session(user_id=user_id, session_id=session_id)
-    print("Session details:")
-    print(f"  ID: {session.get('id')}")
-    print(f"  User ID: {session.get('user_id', 'N/A')}")
-    print(f"  App name: {session.get('app_name', 'N/A')}")
-    print(f"  Last update time: {session.get('last_update_time', 'N/A')}")
+    try:
+        remote_app = agent_engines.get(resource_id)
+        session = remote_app.get_session(user_id=user_id, session_id=session_id)
+        print("Session details:")
+        print(f"  ID: {session.get('id')}")
+        print(f"  User ID: {session.get('user_id', 'N/A')}")
+        print(f"  App name: {session.get('app_name', 'N/A')}")
+        print(f"  Last update time: {session.get('last_update_time', 'N/A')}")
+    except Exception as e:
+        print(f"Error getting session: {e}")
 
 
 def send_message(resource_id: str, user_id: str, session_id: str, message: str) -> None:
     """Sends a message to the deployed agent."""
-    remote_app = agent_engines.get(resource_id)
-
-    print(f"Sending message to session {session_id}:")
-    # Handle Unicode characters safely
     try:
-        print("Message:", message)
-    except UnicodeEncodeError:
-        # Safely encode Unicode characters for Windows console
-        safe_message = message.encode('utf-8', errors='replace').decode('utf-8')
-        print("Message:", safe_message)
-    print("\nResponse:")
-    for event in remote_app.stream_query(
-        user_id=user_id,
-        session_id=session_id,
-        message=message,
-    ):
+        remote_app = agent_engines.get(resource_id)
+
+        print(f"Sending message to session {session_id}:")
+        # Handle Unicode characters safely
         try:
-            print(event)
+            print("Message:", message)
         except UnicodeEncodeError:
             # Safely encode Unicode characters for Windows console
-            safe_event = str(event).encode('utf-8', errors='replace').decode('utf-8')
-            print(safe_event)
+            safe_message = message.encode('utf-8', errors='replace').decode('utf-8')
+            print("Message:", safe_message)
+        print("\nResponse:")
+        for event in remote_app.stream_query(
+            user_id=user_id,
+            session_id=session_id,
+            message=message,
+        ):
+            try:
+                print(event)
+            except UnicodeEncodeError:
+                # Safely encode Unicode characters for Windows console
+                safe_event = str(event).encode('utf-8', errors='replace').decode('utf-8')
+                print(safe_event)
+    except Exception as e:
+        print(f"Error sending message: {e}")
 
 
 def main(argv=None):
@@ -207,7 +227,15 @@ def main(argv=None):
         if not FLAGS.session_id:
             print("session_id is required for send")
             return
-        send_message(FLAGS.resource_id, user_id, FLAGS.session_id, FLAGS.message)
+        
+        message_to_send = FLAGS.message
+        # If content is piped, read from stdin
+        if not sys.stdin.isatty():
+            stdin_message = sys.stdin.read().strip()
+            if stdin_message:
+                message_to_send = stdin_message
+
+        send_message(FLAGS.resource_id, user_id, FLAGS.session_id, message_to_send)
     else:
         print(
             "Please specify one of: --create, --delete, --list, --create_session, --list_sessions, --get_session, or --send"
