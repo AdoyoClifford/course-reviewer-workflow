@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Reviewer Workflow - ABYA University</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h1>Course Reviewer</h1>
+                </div>
+                <p class="subtitle">AI-Powered Course Evaluation System</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-card">
+                    <div class="upload-header">
+                        <h2>Upload Course Content</h2>
+                        <p>Upload your course content as a text file for comprehensive evaluation using ABYA University's standardized rubric.</p>
+                    </div>
+                    
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h3>Drop your text file here</h3>
+                            <p>or <span class="browse-link">browse files</span></p>
+                            <input type="file" id="fileInput" accept=".txt,.md,.doc,.docx" hidden>
+                        </div>
+                    </div>
+
+                    <div class="file-info" id="fileInfo" style="display: none;">
+                        <div class="file-details">
+                            <i class="fas fa-file-text"></i>
+                            <div class="file-text">
+                                <span class="file-name" id="fileName"></span>
+                                <span class="file-size" id="fileSize"></span>
+                            </div>
+                            <button class="remove-file" id="removeFile">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button class="analyze-btn" id="analyzeBtn" disabled>
+                        <i class="fas fa-brain"></i>
+                        Analyze Course Content
+                    </button>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-card">
+                    <div class="results-header">
+                        <h2>Evaluation Results</h2>
+                        <div class="status-badge" id="statusBadge">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="statusText">Passed</span>
+                        </div>
+                    </div>
+
+                    <!-- Score Overview -->
+                    <div class="score-overview">
+                        <div class="final-score">
+                            <div class="score-circle">
+                                <div class="score-value" id="finalScore">85.75</div>
+                                <div class="score-label">Final Score</div>
+                            </div>
+                        </div>
+                        <div class="score-details">
+                            <div class="score-item">
+                                <span class="label">Category:</span>
+                                <span class="value" id="courseCategory">Blockchain Technology and Development</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="label">Pass Mark:</span>
+                                <span class="value">80%</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="label">Status:</span>
+                                <span class="value status-pass" id="passStatus">PASSED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Scores -->
+                    <div class="individual-scores">
+                        <h3>Rubric Element Scores</h3>
+                        <div class="scores-grid" id="scoresGrid">
+                            <!-- Scores will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div class="feedback-section">
+                        <div class="feedback-item">
+                            <h3><i class="fas fa-lightbulb"></i> Summary</h3>
+                            <p id="summaryText">Loading feedback...</p>
+                        </div>
+                        <div class="feedback-item">
+                            <h3><i class="fas fa-rocket"></i> Recommendations</h3>
+                            <p id="recommendationText">Loading recommendations...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading Section -->
+            <section class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-card">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                    </div>
+                    <h3>Analyzing Course Content</h3>
+                    <p>Our AI agents are evaluating your course...</p>
+                    <div class="progress-steps">
+                        <div class="step active" id="step1">
+                            <i class="fas fa-tags"></i>
+                            <span>Categorizing</span>
+                        </div>
+                        <div class="step" id="step2">
+                            <i class="fas fa-clipboard-check"></i>
+                            <span>Grading</span>
+                        </div>
+                        <div class="step" id="step3">
+                            <i class="fas fa-calculator"></i>
+                            <span>Calculating</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 ABYA University - Course Reviewer Workflow System</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

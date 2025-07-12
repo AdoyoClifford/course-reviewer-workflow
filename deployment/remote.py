@@ -1,13 +1,22 @@
 import os
 import sys
 
+# Force UTF-8 encoding for console output
+os.environ['PYTHONIOENCODING'] = 'utf-8'
+
+# Set UTF-8 encoding for console output on Windows
+if sys.platform == "win32":
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+
 import vertexai
-from absl import app, flags
+from absl import app as absl_app, flags
 from dotenv import load_dotenv
 from vertexai import agent_engines
 from vertexai.preview import reasoning_engines
 
-from reviewer import root_agent
+from reviewer import app
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("project_id", None, "GCP project ID.")
@@ -43,12 +52,6 @@ flags.mark_bool_flags_as_mutual_exclusive(
 
 def create() -> None:
     """Creates a new deployment."""
-    # First wrap the agent in AdkApp
-    app = reasoning_engines.AdkApp(
-        agent=root_agent,
-        enable_tracing=True,
-    )
-
     # Now deploy to Agent Engine
     remote_app = agent_engines.create(
         agent_engine=app,
@@ -83,10 +86,10 @@ def create_session(resource_id: str, user_id: str) -> None:
     remote_app = agent_engines.get(resource_id)
     remote_session = remote_app.create_session(user_id=user_id)
     print("Created session:")
-    print(f"  Session ID: {remote_session['id']}")
-    print(f"  User ID: {remote_session['user_id']}")
-    print(f"  App name: {remote_session['app_name']}")
-    print(f"  Last update time: {remote_session['last_update_time']}")
+    print(f"  Session ID: {remote_session.get('id')}")
+    print(f"  User ID: {remote_session.get('user_id', 'N/A')}")
+    print(f"  App name: {remote_session.get('app_name', 'N/A')}")
+    print(f"  Last update time: {remote_session.get('last_update_time', 'N/A')}")
     print("\nUse this session ID with --session_id when sending messages.")
 
 
@@ -104,10 +107,10 @@ def get_session(resource_id: str, user_id: str, session_id: str) -> None:
     remote_app = agent_engines.get(resource_id)
     session = remote_app.get_session(user_id=user_id, session_id=session_id)
     print("Session details:")
-    print(f"  ID: {session['id']}")
-    print(f"  User ID: {session['user_id']}")
-    print(f"  App name: {session['app_name']}")
-    print(f"  Last update time: {session['last_update_time']}")
+    print(f"  ID: {session.get('id')}")
+    print(f"  User ID: {session.get('user_id', 'N/A')}")
+    print(f"  App name: {session.get('app_name', 'N/A')}")
+    print(f"  Last update time: {session.get('last_update_time', 'N/A')}")
 
 
 def send_message(resource_id: str, user_id: str, session_id: str, message: str) -> None:
@@ -115,14 +118,25 @@ def send_message(resource_id: str, user_id: str, session_id: str, message: str) 
     remote_app = agent_engines.get(resource_id)
 
     print(f"Sending message to session {session_id}:")
-    print(f"Message: {message}")
+    # Handle Unicode characters safely
+    try:
+        print("Message:", message)
+    except UnicodeEncodeError:
+        # Safely encode Unicode characters for Windows console
+        safe_message = message.encode('utf-8', errors='replace').decode('utf-8')
+        print("Message:", safe_message)
     print("\nResponse:")
     for event in remote_app.stream_query(
         user_id=user_id,
         session_id=session_id,
         message=message,
     ):
-        print(event)
+        try:
+            print(event)
+        except UnicodeEncodeError:
+            # Safely encode Unicode characters for Windows console
+            safe_event = str(event).encode('utf-8', errors='replace').decode('utf-8')
+            print(safe_event)
 
 
 def main(argv=None):
@@ -201,6 +215,6 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    app.run(main)
+    absl_app.run(main)
 
     

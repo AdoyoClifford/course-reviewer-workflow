@@ -16,6 +16,8 @@ dependencies = [
     "google-cloud-aiplatform[adk,agent_engines]>=1.42.1,<2.0.0",
     "absl-py>=2.1.0,<3.0.0",
     "cloudpickle>=3.0.0,<4.0.0",
+    "vertexai>=1.42.1,<2.0.0",
+    "deprecated (>=1.2.18,<2.0.0)"
     
 ]
 
