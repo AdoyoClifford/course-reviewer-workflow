@@ -17,8 +17,8 @@ dependencies = [
     "absl-py>=2.1.0,<3.0.0",
     "cloudpickle>=3.0.0,<4.0.0",
     "vertexai>=1.42.1,<2.0.0",
-    "deprecated (>=1.2.18,<2.0.0)"
-    
+    "deprecated (>=1.2.18,<2.0.0)",
+    "toml>=0.10.2,<0.11.0"
 ]
 
 # Define console scripts/entry points
@@ -26,6 +26,7 @@ dependencies = [
 course-reviewer = "reviewer:app"
 reviewer-agent = "reviewer.agent:main"
 deploy-remote = "deployment.remote:main"
+deploy-cloud-run = "deployment.cloud_run:main"
 cleanup = "deployment.cleanup:cleanup_deployment"
 deploy-local = "deployment.local:main"
 

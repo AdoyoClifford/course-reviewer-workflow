@@ -159,6 +159,12 @@ To extend or modify the web UI:
 - Input sanitization for uploaded content
 - Rate limiting for API endpoints (in production)
 
+## Security Requirements
+
+⚠️ **IMPORTANT**: Before running the web UI, ensure you have properly configured your environment variables in the parent directory's `.env` file. Never commit API keys or sensitive credentials to version control.
+
+The web UI requires access to the Google Cloud deployment, which needs proper authentication through environment variables.
+
 ## Performance
 
 - Lazy loading of large result sets
