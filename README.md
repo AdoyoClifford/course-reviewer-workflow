@@ -346,5 +346,3 @@ The system can be integrated into educational platforms via:
 6. Submit a pull request
 
 ## License
-
-[Your chosen license]
