@@ -278,10 +278,3 @@ course-reviewer-workflow/
 
 This project is open source and available under the [MIT License](LICENSE).
 
----
-
-<div align="center">
-
-**Built with ❤️ by [Adoyo Clifford](https://github.com/AdoyoClifford)**
-
-</div>
